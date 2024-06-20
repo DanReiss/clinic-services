@@ -1,10 +1,10 @@
-import IAppointment from "./IAppointment";
-import { ObjectId } from "mongoose";
+import IDBAppointment from "./IDBAppointment";
+import { Types } from "mongoose";
 
 interface IDBDocument{
-  _id: ObjectId;
+  _id: Types.ObjectId;
   _doctor_id: string;
-  appointments: IAppointment[];
+  appointments: IDBAppointment[];
 }
 
 export default IDBDocument;

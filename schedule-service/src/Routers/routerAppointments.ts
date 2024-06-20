@@ -15,7 +15,6 @@ type postRequestBody = {
 routerAppointments.post("/appointments", async (req, res) => {
 	const {date: dateString, _client_id}: postRequestBody = req.body;
 
-
 	if(!dateString){
 		res.status(400).json("É necessária uma data válida para a consulta");
 	}
@@ -30,12 +29,19 @@ routerAppointments.post("/appointments", async (req, res) => {
 	};
 
 	try{
-		await appointmentsODM.createCollection(appointmentData, testDoctorID);
+		const doctorDocument =  await appointmentsODM.getDoctorDocument(testDoctorID);
+		
+		if(doctorDocument){
+			await appointmentsODM.updateCollection(doctorDocument, appointmentData);
+		} else {
+			await appointmentsODM.createCollection(appointmentData, testDoctorID);
+		}
+
 	
 		res.status(200).json("Consulta adicionada com sucesso");
 	} catch(err){
-		console.log(err);
-		res.status(400).json("Não foi possível adicionar!");
+		const errObject = err as Error;
+		res.status(400).json(errObject.message);
 	}
 });
 
