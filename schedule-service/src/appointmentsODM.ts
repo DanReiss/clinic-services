@@ -39,7 +39,7 @@ export default class AppointmentsODM {
 		});
 
 		if(appointmentInConflict){
-			throw Error("You cannot have two tasks in the same period of time");
+			throw Error("You cannot have two appointments in the same period of time");
 		}
 
 		const updatedDocument: IDBDocument | null = await this.model.findByIdAndUpdate(
@@ -49,6 +49,26 @@ export default class AppointmentsODM {
 		);
 
 		return updatedDocument;
+	}
+
+	public async deleteOne(_doctor_id: string, appointmentID: string){
+		const doctorDocument = await this.model.findOne({_doctor_id});
+		
+		if(!doctorDocument){
+			throw Error("We could not find this doctor");
+		}
+
+		const updatedAppointments: IDBAppointment[] = doctorDocument.appointments.filter(appointment => {
+			return String(appointment._id) != appointmentID;
+		});
+
+		if(updatedAppointments.length === doctorDocument.appointments.length){
+			throw Error("We could not find this appointment. Insert a valid ID or verify if this task exists.");
+		}
+		
+		const updateDocument = await this.model.findByIdAndUpdate(doctorDocument._id, {appointments: updatedAppointments}, {new: true});
+
+		return updateDocument;
 	}
 
 	private verifyAppointmentsConflict(appointmentA: IAppointment, appointmentB: IAppointment){

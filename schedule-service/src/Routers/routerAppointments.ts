@@ -16,11 +16,11 @@ routerAppointments.post("/appointments", async (req, res) => {
 	const {date: dateString, _client_id}: postRequestBody = req.body;
 
 	if(!dateString){
-		res.status(400).json("É necessária uma data válida para a consulta");
+		res.status(400).json("A valid appointment date is required");
 	}
 
 	if(!_client_id){
-		res.status(400).json("É necessário o cpf do cliente");
+		res.status(400).json("Client ID required");
 	}
 
 	const appointmentData: IAppointment = {
@@ -38,7 +38,28 @@ routerAppointments.post("/appointments", async (req, res) => {
 		}
 
 	
-		res.status(200).json("Consulta adicionada com sucesso");
+		res.status(200).json("Appointment added successfully");
+	} catch(err){
+		const errObject = err as Error;
+		res.status(400).json(errObject.message);
+	}
+});
+
+routerAppointments.delete("/appointments/:id", async (req, res) => {
+	const id = req.params.id as string;
+	
+	if(id.length != 24){
+		return res.status(400).json("Invalid Appointment ID");
+	}
+
+	if(!id){
+		return res.status(400).json("Appointment ID required");
+	}
+
+	try{
+		await appointmentsODM.deleteOne(testDoctorID, id);
+	
+		res.status(200).json("Appointment removed successfully");
 	} catch(err){
 		const errObject = err as Error;
 		res.status(400).json(errObject.message);
