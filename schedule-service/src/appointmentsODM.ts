@@ -2,6 +2,8 @@ import { Schema, Model, model, models, Types } from "mongoose";
 import IDBDocument from "./Interfaces/IDBDocument";
 import IAppointment from "./Interfaces/IAppointment";
 import IDBAppointment from "./Interfaces/IDBAppointment";
+import {StatusError} from "./errors/CustomErrors";
+
 export default class AppointmentsODM {
 	private schema: Schema;
 	private model: Model<IDBDocument>;
@@ -39,7 +41,7 @@ export default class AppointmentsODM {
 		});
 
 		if(appointmentInConflict){
-			throw Error("You cannot have two appointments in the same period of time");
+			throw new StatusError(400, "You cannot have two appointments in the same period of time");
 		}
 
 		const updatedDocument: IDBDocument | null = await this.model.findByIdAndUpdate(
@@ -55,7 +57,7 @@ export default class AppointmentsODM {
 		const doctorDocument = await this.model.findOne({_doctor_id});
 		
 		if(!doctorDocument){
-			throw Error("We could not find this doctor");
+			throw new StatusError(400, "We could not find this doctor");
 		}
 
 		const updatedAppointments: IDBAppointment[] = doctorDocument.appointments.filter(appointment => {
@@ -63,7 +65,7 @@ export default class AppointmentsODM {
 		});
 
 		if(updatedAppointments.length === doctorDocument.appointments.length){
-			throw Error("We could not find this appointment. Insert a valid ID or verify if this task exists.");
+			throw new StatusError(400, "We could not find this appointment. Insert a valid ID or verify if this task exists.");
 		}
 		
 		const updateDocument = await this.model.findByIdAndUpdate(doctorDocument._id, {appointments: updatedAppointments}, {new: true});
@@ -75,7 +77,7 @@ export default class AppointmentsODM {
 		const doctorDocument = await this.model.findOne({_doctor_id});
 
 		if(!doctorDocument){
-			throw Error("We could not find this doctor. Insert a valid ID.");
+			throw new StatusError(400, "We could not find this doctor. Insert a valid ID.");
 		}
 
 		return doctorDocument.appointments;
@@ -86,7 +88,7 @@ export default class AppointmentsODM {
 		let updatedAppointment: null | IDBAppointment = null;
 		
 		if(!doctorDocument){
-			throw Error("We could not find this doctor. Insert a valid ID");
+			throw new StatusError(400, "We could not find this doctor. Insert a valid ID");
 		}
 
 		const updatedAppointments: IDBAppointment[] = doctorDocument.appointments.map(appointment =>{
@@ -105,7 +107,7 @@ export default class AppointmentsODM {
 		});
 
 		if(!updatedAppointment){
-			throw Error("We could not find this task. Insert a valid ID.");
+			throw new StatusError(400, "We could not find this task. Insert a valid ID.");
 		}
 
 		const appointmentInConflict: IDBAppointment | undefined = doctorDocument.appointments.find(appointment => {
@@ -117,7 +119,7 @@ export default class AppointmentsODM {
 		});
 
 		if(appointmentInConflict){
-			throw Error("You cannot have two appointments in the same period of time");
+			throw new StatusError(400, "You cannot have two appointments in the same period of time");
 		}
 
 		return await this.model.findByIdAndUpdate(doctorDocument.id, {appointments: updatedAppointments}, {new: true});

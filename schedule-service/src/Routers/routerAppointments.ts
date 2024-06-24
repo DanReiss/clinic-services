@@ -1,6 +1,7 @@
 import { Router } from "express";
 import AppointmentsODM from "../appointmentsODM";
 import IAppointment from "../Interfaces/IAppointment";
+import { StatusError } from "../errors/CustomErrors";
 
 const routerAppointments = Router();
 const appointmentsODM = new AppointmentsODM();
@@ -14,17 +15,30 @@ type postRequestBody = {
 
 routerAppointments.post("/appointments", async (req, res) => {
 	const {date: dateString, _client_id}: postRequestBody = req.body;
+	const date = new Date(dateString);
 
 	if(!dateString){
 		res.status(400).json("A valid appointment date is required");
+		return;
+	}
+
+	if(isNaN(Date.parse(dateString))){
+		res.status(400).json({message: "Insert a valid date"});
+		return;
+	}
+
+	if(date < new Date()){
+		res.status(400).json({message: "A new appointment cannot be in the past"});
+		return; 
 	}
 
 	if(!_client_id){
 		res.status(400).json("Client ID required");
+		return;
 	}
 
 	const appointmentData: IAppointment = {
-		date: new Date(dateString),
+		date: date,
 		_client_id: _client_id,
 	};
 
@@ -38,10 +52,10 @@ routerAppointments.post("/appointments", async (req, res) => {
 		}
 
 	
-		res.status(200).json("Appointment added successfully");
+		res.status(201).json("Appointment added successfully");
 	} catch(err){
-		const errObject = err as Error;
-		res.status(400).json(errObject.message);
+		const errObject = err as StatusError;
+		res.status(errObject.statusCode || 500).json(errObject.message);
 	}
 });
 
@@ -61,8 +75,8 @@ routerAppointments.delete("/appointments/:id", async (req, res) => {
 	
 		res.status(200).json("Appointment removed successfully");
 	} catch(err){
-		const errObject = err as Error;
-		res.status(400).json(errObject.message);
+		const errObject = err as StatusError;
+		res.status(errObject.statusCode || 500).json(errObject.message);
 	}
 });
 
@@ -73,22 +87,33 @@ routerAppointments.get("/appointments", async (req, res) => {
 
 		res.status(200).json(appointments);
 	} catch(err){
-		const errObject = err as Error;
-		res.status(400).json(errObject.message);
+		const errObject = err as StatusError;
+		res.status(errObject.statusCode || 500).json(errObject.message);
 	}
 });
 
 
 routerAppointments.patch("/appointments/:id", async (req, res) => {
 	const {id} = req.params;
-	const {date, _client_id} = req.body;
+	const {date: dateString, _client_id} = req.body;
+	const date = new Date(dateString);
 
 	if(!id){
 		return res.status(400).json("DoctorID required");
 	}
 
-	if(!date && !_client_id){
+	if(!dateString && !_client_id){
 		return res.status(400).json("New data required");
+	}
+
+	if(date && isNaN(Date.parse(dateString))){
+		res.status(400).json({message: "Insert a valid date"});
+		return;
+	}
+
+	if(date && dateString < new Date()){
+		res.status(400).json({message: "A new appointment cannot be in the past"});
+		return; 
 	}
 
 	try{
