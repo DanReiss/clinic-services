@@ -66,4 +66,39 @@ routerAppointments.delete("/appointments/:id", async (req, res) => {
 	}
 });
 
+
+routerAppointments.get("/appointments", async (req, res) => {
+	try{
+		const appointments = await appointmentsODM.getAll(testDoctorID);
+
+		res.status(200).json(appointments);
+	} catch(err){
+		const errObject = err as Error;
+		res.status(400).json(errObject.message);
+	}
+});
+
+
+routerAppointments.patch("/appointments/:id", async (req, res) => {
+	const {id} = req.params;
+	const {date, _client_id} = req.body;
+
+	if(!id){
+		return res.status(400).json("DoctorID required");
+	}
+
+	if(!date && !_client_id){
+		return res.status(400).json("New data required");
+	}
+
+	try{
+		const appointmentUpdated = await appointmentsODM.updateOne(testDoctorID, id, {date, _client_id});
+			
+		res.status(200).json({message: "Updated Successfully!", appointmentUpdated});
+	}catch(err){
+		const errorObject = err as Error;
+		res.status(400).json({message: errorObject.message});
+	}
+});
+
 export default routerAppointments;

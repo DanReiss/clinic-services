@@ -71,6 +71,58 @@ export default class AppointmentsODM {
 		return updateDocument;
 	}
 
+	public async getAll(_doctor_id: string){
+		const doctorDocument = await this.model.findOne({_doctor_id});
+
+		if(!doctorDocument){
+			throw Error("We could not find this doctor. Insert a valid ID.");
+		}
+
+		return doctorDocument.appointments;
+	}
+
+	public async updateOne(_doctor_id: string, appointmentID: string, newData: Partial<IDBAppointment>){
+		const doctorDocument = await this.model.findOne({_doctor_id});
+		let updatedAppointment: null | IDBAppointment = null;
+		
+		if(!doctorDocument){
+			throw Error("We could not find this doctor. Insert a valid ID");
+		}
+
+		const updatedAppointments: IDBAppointment[] = doctorDocument.appointments.map(appointment =>{
+			if(appointment._id.toString() === appointmentID){
+				const updated: IDBAppointment = {
+					_id: appointment._id,
+					_client_id: newData._client_id || appointment._client_id,
+					date: newData.date || appointment.date,
+				};
+
+
+				updatedAppointment = updated;
+				return updated; 
+			}
+			return appointment;
+		});
+
+		if(!updatedAppointment){
+			throw Error("We could not find this task. Insert a valid ID.");
+		}
+
+		const appointmentInConflict: IDBAppointment | undefined = doctorDocument.appointments.find(appointment => {
+			if(appointment._id.toString() !== appointmentID.toString() && updatedAppointment){
+				return this.verifyAppointmentsConflict(appointment, updatedAppointment);
+			}
+
+			return false;
+		});
+
+		if(appointmentInConflict){
+			throw Error("You cannot have two appointments in the same period of time");
+		}
+
+		return await this.model.findByIdAndUpdate(doctorDocument.id, {appointments: updatedAppointments}, {new: true});
+	}
+
 	private verifyAppointmentsConflict(appointmentA: IAppointment, appointmentB: IAppointment){
 		const appointmentADate = new Date(appointmentA.date);
 		const appointmentBDate = new Date(appointmentB.date);
@@ -84,9 +136,6 @@ export default class AppointmentsODM {
 		
 		const appointmentBInit = appointmentBDate.getUTCHours() + appointmentBDate.getUTCMinutes() / 60;
 		const appointmentBFinish = appointmentBInit + 45 / 60;
-
-		console.log(appointmentAInit, appointmentAFinish);
-		console.log(appointmentBInit, appointmentBFinish);
 
 		if(appointmentBInit >= appointmentAInit && appointmentBInit < appointmentAFinish){
 			return true;
